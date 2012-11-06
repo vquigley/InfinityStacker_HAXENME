@@ -1,0 +1,11 @@
+android
+cpp
+haxe_208
+haxe_209
+haxe_210
+mobile
+nme
+nme_install_tool
+sys
+true
+C:\Motion-Twin\haxe\lib\hxcpp/2,10,1/

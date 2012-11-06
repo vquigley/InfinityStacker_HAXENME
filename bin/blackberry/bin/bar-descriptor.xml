@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>                                                                                                                               
+<qnx xmlns="http://www.qnx.com/schemas/application/1.0">
+    
+	<id>com.twinnova.infinitystacker.InfinityStacker</id>
+    <name>Infinity Stacker</name>
+	<description></description>
+	
+	<author>Vincent Quigley</author>
+    <authorId>gYAAgF-DMYiFsOQ3U6QvuW1fQDY</authorId>
+	
+    <versionNumber>1.0.0</versionNumber>
+	<buildId>1</buildId>
+    
+    <initialWindow>
+		
+        <systemChrome>none</systemChrome>
+        <transparent>false</transparent>
+        <!-- <autoOrients>true</autoOrients> -->
+		
+		<autoOrients>false</autoOrients><aspectRatio>portrait</aspectRatio>
+		
+    </initialWindow>
+	
+    <env var="LD_LIBRARY_PATH" value="app/native"/>
+    <env var="FORCE_PORTRAIT" value="1" />
+	<action system="true">run_native</action>
+    
+	<category>core.games</category>
+    
+	<asset entry="true" path="InfinityStacker" type="Qnx/Elf">InfinityStacker</asset>
+	<asset path=".">.</asset>
+	
+	<icon>
+		<image>icon-150.png</image>
+		<image>icon-86.png</image>
+	</icon>
+	
+    <!-- <splashscreen>splashscreen.png</splashscreen>-->
+	
+</qnx>
