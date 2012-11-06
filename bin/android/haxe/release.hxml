@@ -1,9 +1,0 @@
--main ApplicationMain 
--D nme_install_tool
--cp src
--lib nme
--D mobile
--cp bin/android/haxe
--cpp bin/android/obj
---remap flash:nme
--D android
