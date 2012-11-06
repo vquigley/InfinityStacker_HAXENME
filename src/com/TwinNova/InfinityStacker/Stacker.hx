@@ -13,6 +13,9 @@ import flash.events.Event;
 import flash.Lib;
 import nme.geom.ColorTransform;
 
+import nme.events.MouseEvent;
+import nme.events.TouchEvent;
+
 /**
  * ...
  * @author Vincent Quigley
@@ -33,11 +36,12 @@ class Stacker extends Sprite
 	static var NUM_ROWS:Int = 12;
 	static var NUM_COLUMNS:Int = 8;
 	
-	static var START_MOVE_LENGTH:Float = 1;
+	static var START_MOVE_LENGTH:Float = 0.1;
 	var CurrentMoveLength:Float;
 	
 	static var ALPHA_ON_STATE:Int = 200;
-	static var ALPHA_OFF_STATE:Int = 50;
+	static var ALPHA_OFF_STATE:Int = 0;
+	static var SPACE_BETWEEN_SQUARES = 5;
 	
 	var squareMatrix:Array<Array<Sprite>>;
 	
@@ -45,6 +49,8 @@ class Stacker extends Sprite
 	var currentColumns:Int = 0x3c;
 	var previousColumns = 0;
 	var GoRight:Bool = false;
+	
+	var ratio:Float;
 	
 	public function new() 
 	{
@@ -63,6 +69,8 @@ class Stacker extends Sprite
 		
 		squareMatrix = new Array<Array<Sprite>>();
 		
+		ratio = (Lib.current.stage.stageWidth / SCREEN_WIDTH);
+		
 		for (x in 0...NUM_ROWS)
 		{
 			squareMatrix.push(new Array<Sprite>());
@@ -71,13 +79,29 @@ class Stacker extends Sprite
 	
 	private function construct ():Void {
 		fillGrid();	
-		
+		Lib.current.stage.addEventListener (MouseEvent.MOUSE_DOWN, blocks_onClick);
 		Actuate.timer (CurrentMoveLength).onComplete (moveBlocks);
+	}
+	
+	private function blocks_onClick(e:Dynamic):Void
+	{
+		if (currentRow == 6)
+		{
+			shiftDown();
+		}
+		else
+		{
+			currentRow += 1;
+		}
+	}
+	
+	private function shiftDown()
+	{
+		
 	}
 	
 	private function moveBlocks():Void {
 		
-		trace(currentColumns);
 		if ((currentColumns & 0xC0) == 0xC0)
 		{
 			GoRight = true;
@@ -97,25 +121,21 @@ class Stacker extends Sprite
 		}
 		
 		for (column in 0...NUM_COLUMNS)
-		{
-			var ct:ColorTransform = squareMatrix[0][column].transform.colorTransform;
+		{			
+			var isOn:Bool = (((currentColumns >> column) & 1) == 1);
 			
-			if (((currentColumns >> column) & 1) == 1)
-			{
-				if (squareMatrix[0][column].alpha == ALPHA_OFF_STATE)
-				{
-					ct.alphaOffset += (ALPHA_ON_STATE - ALPHA_OFF_STATE);
-				}
-			}
-			else if (squareMatrix[0][column].alpha == ALPHA_ON_STATE)
-			{
-				ct.alphaOffset -= (ALPHA_ON_STATE - ALPHA_OFF_STATE);
-			}
-			
-			squareMatrix[0][0].transform.colorTransform = ct;
+			trace(column);
+			trace(isOn);
+			turn(currentRow - 1, column, isOn);
 		}
 		
 		Actuate.timer (CurrentMoveLength).onComplete (moveBlocks);
+	}
+	
+	private function turn(row, column, isON)
+	{
+		Lib.current.removeChild(squareMatrix[row][column]);
+		addSquare(row, column, isON);
 	}
 
 	private function init(e) 
@@ -139,22 +159,33 @@ class Stacker extends Sprite
 		}
 	}
 	
-	private function addSquare(rowNumber:Int, columnNumber:Int)
+	private function addSquare(rowNumber:Int, columnNumber:Int, isON:Bool = false)
 	{
 		var square:Sprite = new Sprite();
 		square.graphics.lineStyle(1, 0x00ff00, 1);
-		square.graphics.beginFill(0xE0D873, 0);
-		square.graphics.drawRect(scale(columnNumber * SQUARE_WIDTH), 
-								 scale(rowNumber* SQUARE_WIDTH), 
+		square.graphics.beginFill(0xE0D873, ((isON == false) ? 0.2 : 0.8));
+		square.graphics.drawRect(scale(columnNumber * SQUARE_WIDTH + (columnNumber * SPACE_BETWEEN_SQUARES)), 
+								 scale(SCREEN_HEIGHT - (rowNumber * SQUARE_WIDTH + (rowNumber * SPACE_BETWEEN_SQUARES))), 
 								 scale(SQUARE_WIDTH), 
 								 scale(SQUARE_WIDTH));
-		squareMatrix[rowNumber].push(square);
+		
+		if (squareMatrix[rowNumber].length >= columnNumber)
+		{
+			squareMatrix[rowNumber][columnNumber] = square;
+		}
+		else
+		{
+			squareMatrix[rowNumber].push(square);
+		}
+		
 		Lib.current.addChild(square);
 	}
 	
 	public function scale(length:Float):Float
 	{
 
-		return (Lib.current.stage.stageWidth / SCREEN_WIDTH) * length;
+		return ratio * length;
 	}
+	
+	
 }
