@@ -1,8 +1,9 @@
 package com.twinnova.infinitystacker;
 
 import com.eclecticdesignstudio.motion.Actuate;
+import com.eclecticdesignstudio.motion.easing.Elastic;
+import nme.geom.Matrix;
 
-import nme.display.Sprite;
 import nme.events.Event;
 import nme.Lib;
 import flash.display.Sprite;
@@ -70,11 +71,6 @@ class Stacker extends Sprite
 		squareMatrix = new Array<Array<Sprite>>();
 		
 		ratio = (Lib.current.stage.stageWidth / SCREEN_WIDTH);
-		
-		for (x in 0...NUM_ROWS)
-		{
-			squareMatrix.push(new Array<Sprite>());
-		}
 	}
 	
 	private function construct ():Void {
@@ -97,7 +93,42 @@ class Stacker extends Sprite
 	
 	private function shiftDown()
 	{
+		addRow();
 		
+		for (row in squareMatrix)
+		{
+			for (square in row)
+			{
+				var myMatrix:Matrix = square.transform.matrix; 
+				myMatrix.ty += scale(SQUARE_WIDTH + SPACE_BETWEEN_SQUARES);
+				square.transform.matrix = myMatrix; 
+				
+		//		Actuate.tween (square, 2, { y: newY} )
+			//					.ease (Elastic.easeOut);		
+			}
+		}
+		
+		removeBottomRow();
+	}
+	
+	
+	private function removeBottomRow()
+	{
+		var bottomRow:Array<Sprite> = squareMatrix[0];
+		
+		for (square in bottomRow)
+		{
+			var local:Sprite = square;
+			Actuate.tween(square, 1, { alpha: 0 } );
+			removeSquare(square);
+		}
+		
+		squareMatrix.remove(bottomRow);
+	}
+	
+	private function removeSquare(square:Sprite)
+	{		
+		Lib.current.removeChild(square);
 	}
 	
 	private function moveBlocks():Void {
@@ -121,11 +152,9 @@ class Stacker extends Sprite
 		}
 		
 		for (column in 0...NUM_COLUMNS)
-		{			
+		{
 			var isOn:Bool = (((currentColumns >> column) & 1) == 1);
 			
-			trace(column);
-			trace(isOn);
 			turn(currentRow - 1, column, isOn);
 		}
 		
@@ -147,15 +176,17 @@ class Stacker extends Sprite
 	{
 		for (rowNumber in 0...NUM_ROWS)
 		{
-			addRow(rowNumber);
+			addRow();
 		}
 	}
 	
-	private function addRow(rowNumber:Int)
+	private function addRow()
 	{		
+		squareMatrix.push(new Array<Sprite>());
+		
 		for (columnNumber in 0...NUM_COLUMNS)
 		{
-			addSquare(rowNumber, columnNumber);
+			addSquare(squareMatrix.length - 1, columnNumber);
 		}
 	}
 	
@@ -183,7 +214,6 @@ class Stacker extends Sprite
 	
 	public function scale(length:Float):Float
 	{
-
 		return ratio * length;
 	}
 	
