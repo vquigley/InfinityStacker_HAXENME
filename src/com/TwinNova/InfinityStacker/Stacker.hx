@@ -1,7 +1,9 @@
 package com.twinnova.infinitystacker;
 
 import com.eclecticdesignstudio.motion.Actuate;
+import com.eclecticdesignstudio.motion.actuators.GenericActuator;
 import com.eclecticdesignstudio.motion.easing.Elastic;
+import com.eclecticdesignstudio.motion.easing.Bounce;
 import nme.geom.Matrix;
 
 import nme.events.Event;
@@ -26,7 +28,10 @@ class Stacker extends Sprite
 {
 	static public function main() 
 	{
-		Lib.current.addChild (new Stacker());		
+		var stacker:Stacker = new Stacker();
+		stacker.x = (Lib.current.stage.stageWidth - stacker.width) / 2;
+		Lib.current.addChild (stacker);
+		stacker.start();		
 	}
 	
 	static var SQUARE_WIDTH:Int = 50;
@@ -53,6 +58,8 @@ class Stacker extends Sprite
 	
 	var ratio:Float;
 	
+	var sweepBlocks:IGenericActuator;
+	
 	public function new() 
 	{
 		super ();
@@ -75,8 +82,6 @@ class Stacker extends Sprite
 	
 	private function construct ():Void {
 		fillGrid();	
-		Lib.current.stage.addEventListener (MouseEvent.MOUSE_DOWN, blocks_onClick);
-		Actuate.timer (CurrentMoveLength).onComplete (moveBlocks);
 	}
 	
 	private function blocks_onClick(e:Dynamic):Void
@@ -91,44 +96,62 @@ class Stacker extends Sprite
 		}
 	}
 	
-	private function shiftDown()
+	private function start()
 	{
-		addRow();
+		Lib.current.stage.addEventListener (MouseEvent.MOUSE_DOWN, blocks_onClick);
+		sweepBlocks = Actuate.timer (CurrentMoveLength).onComplete (moveBlocks);
+	}
+	
+	function beginSetBlocks()
+	{
+		Actuate.pause(sweepBlocks);
+		Lib.current.stage.removeEventListener(MouseEvent.MOUSE_DOWN, blocks_onClick);
 		
+	}
+	
+	function endSetBlocks()
+	{
+		moveBlocks();
+		Lib.current.stage.addEventListener (MouseEvent.MOUSE_DOWN, blocks_onClick);
+	}
+	
+	private function shiftDown()
+	{		
+		beginSetBlocks();
+		
+		addRow();
+				
 		for (row in squareMatrix)
 		{
 			for (square in row)
 			{
-				var myMatrix:Matrix = square.transform.matrix; 
-				myMatrix.ty += scale(SQUARE_WIDTH + SPACE_BETWEEN_SQUARES);
-				square.transform.matrix = myMatrix; 
-				
-		//		Actuate.tween (square, 2, { y: newY} )
-			//					.ease (Elastic.easeOut);		
+				Actuate.tween (square, 1, { y: square.y + scale(SQUARE_WIDTH + SPACE_BETWEEN_SQUARES)} )
+							.ease (Elastic.easeIn);		
 			}
 		}
 		
-		removeBottomRow();
+		Actuate.timer(1).onComplete(removeBottomRow);
 	}
 	
 	
-	private function removeBottomRow()
+	private function removeBottomRow():Void
 	{
 		var bottomRow:Array<Sprite> = squareMatrix[0];
-		
+
 		for (square in bottomRow)
 		{
 			var local:Sprite = square;
-			Actuate.tween(square, 1, { alpha: 0 } );
 			removeSquare(square);
 		}
 		
 		squareMatrix.remove(bottomRow);
+		
+		endSetBlocks();
 	}
 	
 	private function removeSquare(square:Sprite)
 	{		
-		Lib.current.removeChild(square);
+		removeChild(square);
 	}
 	
 	private function moveBlocks():Void {
@@ -158,12 +181,12 @@ class Stacker extends Sprite
 			turn(currentRow - 1, column, isOn);
 		}
 		
-		Actuate.timer (CurrentMoveLength).onComplete (moveBlocks);
+		sweepBlocks = Actuate.timer (CurrentMoveLength).onComplete(moveBlocks);
 	}
 	
 	private function turn(row, column, isON)
 	{
-		Lib.current.removeChild(squareMatrix[row][column]);
+		removeChild(squareMatrix[row][column]);
 		addSquare(row, column, isON);
 	}
 
@@ -192,11 +215,16 @@ class Stacker extends Sprite
 	
 	private function addSquare(rowNumber:Int, columnNumber:Int, isON:Bool = false)
 	{
+		var xPos:Float = scale(columnNumber * SQUARE_WIDTH + (columnNumber * SPACE_BETWEEN_SQUARES));
+		var yPos:Float = scale(SCREEN_HEIGHT - (rowNumber * SQUARE_WIDTH + (rowNumber * SPACE_BETWEEN_SQUARES)));
+		
 		var square:Sprite = new Sprite();
+		square.x = xPos;
+		square.y = yPos;
 		square.graphics.lineStyle(1, 0x00ff00, 1);
 		square.graphics.beginFill(0xE0D873, ((isON == false) ? 0.2 : 0.8));
-		square.graphics.drawRect(scale(columnNumber * SQUARE_WIDTH + (columnNumber * SPACE_BETWEEN_SQUARES)), 
-								 scale(SCREEN_HEIGHT - (rowNumber * SQUARE_WIDTH + (rowNumber * SPACE_BETWEEN_SQUARES))), 
+		square.graphics.drawRect(0, 
+								 0, 
 								 scale(SQUARE_WIDTH), 
 								 scale(SQUARE_WIDTH));
 		
@@ -209,7 +237,7 @@ class Stacker extends Sprite
 			squareMatrix[rowNumber].push(square);
 		}
 		
-		Lib.current.addChild(square);
+		addChild(square);
 	}
 	
 	public function scale(length:Float):Float
