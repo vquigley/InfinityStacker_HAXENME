@@ -8,7 +8,7 @@
 	<!-- output -->
 	<app main="com.twinnova.infinitystacker.Stacker" file="InfinityStacker" path="bin" />
 	
-	<window background="#eeeeee" fps="60" />
+	<window background="#000000" fps="60" />
 	<window width="320" height="640" />
 	<window orientation="portrait" vsync="true" antialiasing="0" />
 	
