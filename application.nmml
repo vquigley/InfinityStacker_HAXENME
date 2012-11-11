@@ -6,7 +6,7 @@
 	<meta title="Infinity Stacker" package="com.twinnova.infinitystacker.InfinityStacker" version="1.0.0" company="Vincent Quigley" />
 
 	<!-- output -->
-	<app main="com.twinnova.infinitystacker.Stacker" file="InfinityStacker" path="bin" />
+	<app main="com.twinnova.infinitystacker.Main" file="Main" path="bin" />
 	
 	<window background="#000000" fps="60" />
 	<window width="320" height="640" />

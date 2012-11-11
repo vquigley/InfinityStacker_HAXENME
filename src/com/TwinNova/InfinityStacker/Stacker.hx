@@ -26,42 +26,39 @@ import nme.events.TouchEvent;
 
 class Stacker extends Sprite 
 {
-	static public function main() 
-	{
-		var stacker:Stacker = new Stacker();
-		Lib.current.addChild (stacker);
-		stacker.start();		
-	}
-
+	static var STOP_AT_ROW:Int = 7;
 	
 	static var SQUARE_WIDTH:Int = 50;
-	
 	static var SCREEN_WIDTH:Int = 480;
 	static var SCREEN_HEIGHT:Int = 640;
 	
 	static var NUM_ROWS:Int = 13;
 	static var NUM_COLUMNS:Int = 8;
 	
-	static var START_MOVE_LENGTH:Float = 0.1;
-	var CurrentMoveLength:Float;
-	
+	static var START_MOVE_LENGTH:Float = 0.4;	
 	static var ALPHA_ON_STATE:Int = 200;
 	static var ALPHA_OFF_STATE:Int = 0;
 	static var SPACE_BETWEEN_SQUARES = 5;
 	
-	var squareMatrix:Array<Array<Sprite>>;
-	
-	var currentRow:Int = 1;
-	var currentColumns:Int = 0x3c;
-	var previousColumns = 0;
-	var GoRight:Bool = false;
-	
-	var ratio:Float;
-	
+	var squareMatrix:Array<Array<Sprite>>;	
+	var ratio:Float;	
 	var sweepBlocks:IGenericActuator;
 	
 	var stackMask:Sprite;
 	var stack:Sprite;
+	var firstShift:Bool;
+	var CurrentMoveLength:Float;	
+	var currentRow:Int;
+	var currentColumns:Int;
+	var previousColumns:Int;
+	var GoRight:Bool;
+	
+	var endGame:Bool = false;
+	
+	public function isEndGame():Bool
+	{
+		return endGame;
+	}
 	
 	public function new() 
 	{
@@ -81,6 +78,12 @@ class Stacker extends Sprite
 		squareMatrix = new Array<Array<Sprite>>();
 		
 		ratio = (Lib.current.stage.stageWidth / SCREEN_WIDTH);
+		
+		firstShift = false;	
+		currentRow = 1;
+		currentColumns = 0x3c;
+		previousColumns = 0;
+		GoRight = false;
 		
 	}
 	
@@ -116,10 +119,64 @@ class Stacker extends Sprite
 		return NUM_COLUMNS * scale(SQUARE_WIDTH + SPACE_BETWEEN_SQUARES);
 	}
 	
-	var firstShift:Bool = false;
+	
 	private function blocks_onClick(e:Dynamic):Void
 	{
-		if (currentRow == 7)
+		CurrentMoveLength /= 1.1;
+		
+		if (checkBlocks() != false)
+		{
+			nextLevel();
+		}
+		else
+		{
+			endGame = true;
+		}
+	}
+	
+	private function checkBlocks():Bool
+	{	
+		if (currentRow != 1)
+		{	trace(currentRow);
+			var temp:Int = (currentColumns ^ previousColumns) & currentColumns;
+			for (column in 0...NUM_COLUMNS)
+			{
+				if (isOn(column, temp))
+				{
+					lostSquare(column);
+				}
+			}
+			
+			currentColumns &= previousColumns;
+		}
+		
+		previousColumns = currentColumns;
+		
+		return (currentColumns != 0);
+	}
+	
+	function lostSquare(columnNumber)
+	{
+		flick(actionRow(), columnNumber);
+	}
+	
+	function flick(row:Int, column:Int, turnOn:Bool = false, iteration:Int = 0):Void
+	{
+		if (iteration < 11)
+		{
+			turn(row, column, turnOn);
+			Actuate.timer(0.1).onComplete(flick, [row, column, ((turnOn != false) ? false :true), iteration + 1]);
+		}
+	}
+	
+	function actionRow()
+	{
+		return ((currentRow >= STOP_AT_ROW) ? STOP_AT_ROW : currentRow ) - 1;
+	}
+	
+	private function nextLevel()
+	{
+		if (currentRow >= STOP_AT_ROW)
 		{	
 			if (firstShift == false)
 			{
@@ -135,10 +192,10 @@ class Stacker extends Sprite
 		}
 	}
 	
-	private function start()
+	public function start()
 	{
+		moveBlocks();
 		Lib.current.stage.addEventListener (MouseEvent.MOUSE_DOWN, blocks_onClick);
-		sweepBlocks = Actuate.timer (CurrentMoveLength).onComplete (moveBlocks);
 	}
 	
 	function beginSetBlocks()
@@ -157,7 +214,6 @@ class Stacker extends Sprite
 	private function shiftDown()
 	{		
 		beginSetBlocks();
-		
 		addRow();
 				
 		for (row in squareMatrix)
@@ -194,12 +250,11 @@ class Stacker extends Sprite
 	}
 	
 	private function moveBlocks():Void {
-		
-		if ((currentColumns & 0xC0) == 0xC0)
+		if (isOn(7, currentColumns) != false)
 		{
 			GoRight = true;
 		}
-		else if ((currentColumns & 1) == 1)
+		else if (isOn(0, currentColumns) != false)
 		{
 			GoRight = false;
 		}
@@ -215,23 +270,23 @@ class Stacker extends Sprite
 		
 		for (column in 0...NUM_COLUMNS)
 		{
-			var isOn:Bool = (((currentColumns >> column) & 1) == 1);
+			var isOn:Bool = isOn(column, currentColumns);
 			
-			turn(currentRow - 1, column, isOn);
+			turn(actionRow(), column, isOn);
 		}
 		
 		sweepBlocks = Actuate.timer (CurrentMoveLength).onComplete(moveBlocks);
 	}
 	
-	private function turn(row, column, isON)
+	function isOn(columnNum, columnByte):Bool
+	{
+		return ((columnByte & (1 << columnNum)) != 0);
+	}
+	
+	private function turn(row, column, isOn)
 	{
 		removeSquare(squareMatrix[row][column]);
-		addSquare(row, column, isON);
-	}
-
-	private function init(e) 
-	{
-		// entry point
+		addSquare(row, column, isOn);
 	}
 	
 	private function fillGrid()
@@ -252,7 +307,7 @@ class Stacker extends Sprite
 		}
 	}
 	
-	private function addSquare(rowNumber:Int, columnNumber:Int, isON:Bool = false)
+	private function addSquare(rowNumber:Int, columnNumber:Int, isOn:Bool = false)
 	{
 		var xPos:Float = scale(columnNumber * SQUARE_WIDTH + (columnNumber * SPACE_BETWEEN_SQUARES));
 		var yPos:Float = scale(SCREEN_HEIGHT - ((rowNumber) * SQUARE_WIDTH + ((rowNumber) * SPACE_BETWEEN_SQUARES)) - SQUARE_WIDTH);
@@ -261,7 +316,7 @@ class Stacker extends Sprite
 		square.x = xPos;
 		square.y = yPos;
 		square.graphics.lineStyle(1, 0x00ff00, 1);
-		square.graphics.beginFill(0xE0D873, ((isON == false) ? 0.2 : 0.8));
+		square.graphics.beginFill(0xE0D873, ((isOn == false) ? 0.2 : 0.8));
 		square.graphics.drawRect(0, 
 								 0, 
 								 scale(SQUARE_WIDTH), 
