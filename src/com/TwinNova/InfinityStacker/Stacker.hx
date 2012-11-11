@@ -35,7 +35,7 @@ class Stacker extends Sprite
 	static var NUM_ROWS:Int = 13;
 	static var NUM_COLUMNS:Int = 8;
 	
-	static var START_MOVE_LENGTH:Float = 0.4;	
+	static var START_MOVE_LENGTH:Float = 0.2;	
 	static var ALPHA_ON_STATE:Int = 200;
 	static var ALPHA_OFF_STATE:Int = 0;
 	static var SPACE_BETWEEN_SQUARES = 5;
@@ -122,13 +122,11 @@ class Stacker extends Sprite
 	
 	private function blocks_onClick(e:Dynamic):Void
 	{
+		
+		beginSetBlocks();
 		CurrentMoveLength /= 1.1;
 		
-		if (checkBlocks() != false)
-		{
-			nextLevel();
-		}
-		else
+		if (checkBlocks() == false)
 		{
 			endGame = true;
 		}
@@ -136,14 +134,17 @@ class Stacker extends Sprite
 	
 	private function checkBlocks():Bool
 	{	
+		var waitForAnimationToComplete:Bool = false;
+		
 		if (currentRow != 1)
-		{	trace(currentRow);
+		{	
 			var temp:Int = (currentColumns ^ previousColumns) & currentColumns;
 			for (column in 0...NUM_COLUMNS)
 			{
 				if (isOn(column, temp))
 				{
 					lostSquare(column);
+					waitForAnimationToComplete = true;
 				}
 			}
 			
@@ -151,6 +152,15 @@ class Stacker extends Sprite
 		}
 		
 		previousColumns = currentColumns;
+		
+		if (waitForAnimationToComplete != false)
+		{
+			Actuate.timer(1.2).onComplete(nextLevel);
+		}
+		else
+		{
+			nextLevel();
+		}
 		
 		return (currentColumns != 0);
 	}
@@ -176,6 +186,7 @@ class Stacker extends Sprite
 	
 	private function nextLevel()
 	{
+		
 		if (currentRow >= STOP_AT_ROW)
 		{	
 			if (firstShift == false)
@@ -189,6 +200,7 @@ class Stacker extends Sprite
 		else
 		{
 			currentRow += 1;
+			Actuate.timer(0.5).onComplete(endSetBlocks);
 		}
 	}
 	
@@ -207,13 +219,12 @@ class Stacker extends Sprite
 	
 	function endSetBlocks()
 	{
-		moveBlocks();
 		Lib.current.stage.addEventListener (MouseEvent.MOUSE_DOWN, blocks_onClick);
+		moveBlocks();
 	}
 	
 	private function shiftDown()
 	{		
-		beginSetBlocks();
 		addRow();
 				
 		for (row in squareMatrix)
@@ -240,8 +251,9 @@ class Stacker extends Sprite
 		}
 		
 		squareMatrix.remove(bottomRow);
-	
+		
 		endSetBlocks();
+	
 	}
 	
 	private function removeSquare(square:Sprite)

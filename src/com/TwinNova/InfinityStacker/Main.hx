@@ -13,7 +13,6 @@ class Main  extends Sprite
 	
 	public static function main() 
 	{
-		trace("Main");
 		stacker= new Stacker();
 		Lib.current.addChild(stacker);
 		stacker.start();
@@ -23,7 +22,6 @@ class Main  extends Sprite
 	
 	static function startGame():Void
 	{
-		trace("start game");
 		stacker= new Stacker();
 		Lib.current.addChild(stacker);
 		stacker.start();
@@ -31,7 +29,6 @@ class Main  extends Sprite
 	
 	public static function restartGame():Void
 	{
-		trace("restart");
 		Lib.current.removeChild(stacker);
 		startGame();
 	}
@@ -39,7 +36,6 @@ class Main  extends Sprite
 	private static function this_onEnterFrame (event:Event):Void {
 		if (stacker.isEndGame() != false)
 		{
-			trace("endGamer");
 			restartGame();
 		}
 	}
