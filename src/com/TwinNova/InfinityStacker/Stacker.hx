@@ -27,23 +27,16 @@ import nme.events.TouchEvent;
 class Stacker extends Sprite 
 {
 	static var STOP_AT_ROW:Int = 7;
-	
 	static var SQUARE_WIDTH:Int = 50;
-	static var SCREEN_WIDTH:Int = 480;
-	static var SCREEN_HEIGHT:Int = 640;
-	
 	static var NUM_ROWS:Int = 13;
 	static var NUM_COLUMNS:Int = 8;
-	
 	static var START_MOVE_LENGTH:Float = 0.2;	
 	static var ALPHA_ON_STATE:Int = 200;
 	static var ALPHA_OFF_STATE:Int = 0;
 	static var SPACE_BETWEEN_SQUARES = 5;
 	
 	var squareMatrix:Array<Array<Sprite>>;	
-	var ratio:Float;	
 	var sweepBlocks:IGenericActuator;
-	
 	var stackMask:Sprite;
 	var stack:Sprite;
 	var firstShift:Bool;
@@ -52,13 +45,7 @@ class Stacker extends Sprite
 	var currentColumns:Int;
 	var previousColumns:Int;
 	var GoRight:Bool;
-	
 	var endGame:Bool = false;
-	
-	public function isEndGame():Bool
-	{
-		return endGame;
-	}
 	
 	public function new() 
 	{
@@ -68,44 +55,47 @@ class Stacker extends Sprite
 		construct ();
 	}
 	
-	private function initialize ():Void {
-		var stage = Lib.current.stage;
-		stage.scaleMode = nme.display.StageScaleMode.NO_SCALE;
-		stage.align = nme.display.StageAlign.TOP_LEFT;
-		
+	public function start()
+	{
+		moveBlocks();
+		Lib.current.stage.addEventListener (MouseEvent.MOUSE_DOWN, blocks_onClick);
+	}
+	
+	public function isEndGame():Bool
+	{
+		return endGame;
+	}
+	
+	private function initialize ():Void {		
 		CurrentMoveLength = START_MOVE_LENGTH;
 		
 		squareMatrix = new Array<Array<Sprite>>();
-		
-		ratio = (Lib.current.stage.stageWidth / SCREEN_WIDTH);
-		
+				
 		firstShift = false;	
 		currentRow = 1;
 		currentColumns = 0x3c;
 		previousColumns = 0;
 		GoRight = false;
-		
 	}
 	
 	private function construct ():Void {
 				
 		stack = new Sprite();
 		stack.x = (Lib.current.stage.stageWidth - stackWidth()) / 2;
-		stack.y = (Lib.current.stage.stageHeight - scale(SCREEN_HEIGHT)) / 2;
+		stack.y = (Lib.current.stage.stageHeight - scale(Global.SCREEN_HEIGHT)) / 2;
 		stack.graphics.drawRect(0, 
 								 0, 
 								 stackWidth(), 
-								 scale(SCREEN_HEIGHT + SQUARE_WIDTH + SPACE_BETWEEN_SQUARES));
+								 scale(Global.SCREEN_HEIGHT + SQUARE_WIDTH + SPACE_BETWEEN_SQUARES));
 		
 		stackMask = new Sprite();
-		stackMask.x = (Lib.current.stage.stageWidth - scale(SCREEN_WIDTH)) / 2;
-		stackMask.y = (Lib.current.stage.stageHeight - scale(SCREEN_HEIGHT)) / 2;
-		stackMask.graphics.lineStyle(1, 0xff0000, 1);
+		stackMask.x = (Lib.current.stage.stageWidth - scale(Global.SCREEN_WIDTH)) / 2;
+		stackMask.y = (Lib.current.stage.stageHeight - scale(Global.SCREEN_HEIGHT)) / 2;
 		stackMask.graphics.beginFill(0x677777, 1);
 		stackMask.graphics.drawRect(0, 
 								 0, 
-								 scale(SCREEN_WIDTH) , 
-								 scale(SCREEN_HEIGHT));
+								 scale(Global.SCREEN_WIDTH) , 
+								 scale(Global.SCREEN_HEIGHT));
 
 		fillGrid();	
 		
@@ -114,25 +104,51 @@ class Stacker extends Sprite
 		addChild(stackMask); 
 	}
 	
-	function stackWidth()
+	public function doEndGame()
+	{
+		Lib.current.stage.removeEventListener(MouseEvent.MOUSE_DOWN, blocks_onClick);
+		endGame = true;
+	}
+	
+	public function resumeGame()
+	{
+		currentColumns = 0x0f;
+		endGame = false;
+		Lib.current.stage.addEventListener (MouseEvent.MOUSE_DOWN, blocks_onClick);
+	}
+	
+	public function getCurrentRow():Int
+	{
+		return currentRow;
+	}
+		
+	private static function stackWidth()
 	{
 		return NUM_COLUMNS * scale(SQUARE_WIDTH + SPACE_BETWEEN_SQUARES);
 	}
 	
-	
 	private function blocks_onClick(e:Dynamic):Void
 	{
-		
 		beginSetBlocks();
 		CurrentMoveLength /= 1.1;
 		
-		if (checkBlocks() == false)
-		{
-			endGame = true;
-		}
+		checkBlocks();
 	}
 	
-	private function checkBlocks():Bool
+	function beginSetBlocks()
+	{
+		Actuate.pause(sweepBlocks);
+		Lib.current.stage.removeEventListener(MouseEvent.MOUSE_DOWN, blocks_onClick);
+		
+	}
+	
+	function endSetBlocks()
+	{
+		Lib.current.stage.addEventListener (MouseEvent.MOUSE_DOWN, blocks_onClick);
+		moveBlocks();
+	}
+	
+	private function checkBlocks():Void
 	{	
 		var waitForAnimationToComplete:Bool = false;
 		
@@ -155,19 +171,24 @@ class Stacker extends Sprite
 		
 		if (waitForAnimationToComplete != false)
 		{
-			Actuate.timer(1.2).onComplete(nextLevel);
+			if (currentColumns != 0)
+			{
+				Actuate.timer(1.2).onComplete(nextLevel);
+			}
+			else
+			{
+				Actuate.timer(1.2).onComplete(doEndGame);
+			}
 		}
 		else
 		{
 			nextLevel();
 		}
-		
-		return (currentColumns != 0);
 	}
 	
 	function lostSquare(columnNumber)
 	{
-		flick(actionRow(), columnNumber);
+		flick(getActionRow(), columnNumber);
 	}
 	
 	function flick(row:Int, column:Int, turnOn:Bool = false, iteration:Int = 0):Void
@@ -179,15 +200,14 @@ class Stacker extends Sprite
 		}
 	}
 	
-	function actionRow()
+	function getActionRow()
 	{
 		return ((currentRow >= STOP_AT_ROW) ? STOP_AT_ROW : currentRow ) - 1;
 	}
 	
 	private function nextLevel()
 	{
-		
-		if (currentRow >= STOP_AT_ROW)
+		if (currentRow++ >= STOP_AT_ROW)
 		{	
 			if (firstShift == false)
 			{
@@ -199,28 +219,8 @@ class Stacker extends Sprite
 		}
 		else
 		{
-			currentRow += 1;
 			Actuate.timer(0.5).onComplete(endSetBlocks);
 		}
-	}
-	
-	public function start()
-	{
-		moveBlocks();
-		Lib.current.stage.addEventListener (MouseEvent.MOUSE_DOWN, blocks_onClick);
-	}
-	
-	function beginSetBlocks()
-	{
-		Actuate.pause(sweepBlocks);
-		Lib.current.stage.removeEventListener(MouseEvent.MOUSE_DOWN, blocks_onClick);
-		
-	}
-	
-	function endSetBlocks()
-	{
-		Lib.current.stage.addEventListener (MouseEvent.MOUSE_DOWN, blocks_onClick);
-		moveBlocks();
 	}
 	
 	private function shiftDown()
@@ -284,7 +284,7 @@ class Stacker extends Sprite
 		{
 			var isOn:Bool = isOn(column, currentColumns);
 			
-			turn(actionRow(), column, isOn);
+			turn(getActionRow(), column, isOn);
 		}
 		
 		sweepBlocks = Actuate.timer (CurrentMoveLength).onComplete(moveBlocks);
@@ -319,10 +319,11 @@ class Stacker extends Sprite
 		}
 	}
 	
+	//  This could be done better, why not create the on and off state from the start.
 	private function addSquare(rowNumber:Int, columnNumber:Int, isOn:Bool = false)
 	{
 		var xPos:Float = scale(columnNumber * SQUARE_WIDTH + (columnNumber * SPACE_BETWEEN_SQUARES));
-		var yPos:Float = scale(SCREEN_HEIGHT - ((rowNumber) * SQUARE_WIDTH + ((rowNumber) * SPACE_BETWEEN_SQUARES)) - SQUARE_WIDTH);
+		var yPos:Float = scale(Global.SCREEN_HEIGHT - ((rowNumber) * SQUARE_WIDTH + ((rowNumber) * SPACE_BETWEEN_SQUARES)) - SQUARE_WIDTH);
 		
 		var square:Sprite = new Sprite();
 		square.x = xPos;
@@ -346,10 +347,8 @@ class Stacker extends Sprite
 		stack.addChild(square);
 	}
 	
-	public function scale(length:Float):Float
+	public static function scale(length:Float):Float
 	{
-		return ratio * length;
+		return Global.Instance().scale(length);
 	}
-	
-	
 }

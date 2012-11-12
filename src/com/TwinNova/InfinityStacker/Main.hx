@@ -10,19 +10,29 @@ import nme.display.Sprite;
 class Main  extends Sprite 
 {
 	private static var stacker:Stacker;
+	private static var endGameScreen:EndGame;
 	
 	public static function main() 
 	{
-		stacker= new Stacker();
-		Lib.current.addChild(stacker);
-		stacker.start();
+		var stage = Lib.current.stage;
+		stage.scaleMode = nme.display.StageScaleMode.NO_SCALE;
+		stage.align = nme.display.StageAlign.TOP_LEFT;
 		
-		Lib.current.addEventListener (Event.ENTER_FRAME, this_onEnterFrame);
+		startGame();
+	}
+	
+	private static function removeEvents()
+	{
+		Lib.current.removeEventListener(Event.ENTER_FRAME, gameFrame);
+		Lib.current.removeEventListener(Event.ENTER_FRAME, endGameFrame);
 	}
 	
 	static function startGame():Void
 	{
-		stacker= new Stacker();
+		removeEvents();
+		Lib.current.addEventListener(Event.ENTER_FRAME, gameFrame);
+		
+		stacker = new Stacker();
 		Lib.current.addChild(stacker);
 		stacker.start();
 	}
@@ -33,11 +43,34 @@ class Main  extends Sprite
 		startGame();
 	}
 	
-	private static function this_onEnterFrame (event:Event):Void {
+	private static function gameFrame(event:Event):Void {
 		if (stacker.isEndGame() != false)
 		{
+			showEndScreen();
+		}
+	}
+	
+	private static function endGameFrame(event:Event):Void {
+		if (endGameScreen.doRestartGame() != false)
+		{
+			Lib.current.removeChild(endGameScreen);
 			restartGame();
 		}
+		else if (endGameScreen.resumeGame() != false)
+		{
+			Lib.current.removeChild(endGameScreen);
+			stacker.resumeGame();
+		}
+	}
+	
+	private static function showEndScreen()
+	{
+		removeEvents();
+		Lib.current.addEventListener(Event.ENTER_FRAME, endGameFrame);
+		
+		endGameScreen = new EndGame(stacker.getCurrentRow());
+		endGameScreen.showScreen();
+		Lib.current.addChild(endGameScreen);
 	}
 	
 }
