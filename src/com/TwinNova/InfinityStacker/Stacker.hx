@@ -30,7 +30,7 @@ class Stacker extends Sprite
 	static var SQUARE_WIDTH:Int = 50;
 	static var NUM_ROWS:Int = 13;
 	static var NUM_COLUMNS:Int = 8;
-	static var START_MOVE_LENGTH:Float = 0.2;	
+	static var START_MOVE_LENGTH:Float = 0.15;	
 	static var ALPHA_ON_STATE:Int = 200;
 	static var ALPHA_OFF_STATE:Int = 0;
 	static var SPACE_BETWEEN_SQUARES = 5;
@@ -130,7 +130,7 @@ class Stacker extends Sprite
 	private function blocks_onClick(e:Dynamic):Void
 	{
 		beginSetBlocks();
-		CurrentMoveLength /= 1.1;
+		CurrentMoveLength /= 1.05;
 		
 		checkBlocks();
 	}
