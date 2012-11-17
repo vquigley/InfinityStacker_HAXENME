@@ -24,6 +24,7 @@ class EndGame extends Sprite
 		score = ascore;
 		var font = Assets.getFont ("font/Galliard Bold.ttf");
 		format = new TextFormat (font.fontName, 30, 0xFFFF00);
+		loadScreen();
 	}
 	
 	public static function scale(length:Float):Float
@@ -31,18 +32,18 @@ class EndGame extends Sprite
 		return Global.Instance().scale(length);
 	}
 	
-	public function showScreen()
+	public function loadScreen()
 	{
 		screenBackground = new Sprite();
 		screenBackground.graphics.lineStyle(1, 0xff0000, 1);
 		screenBackground.graphics.beginFill(0x677777, 1);
 		screenBackground.graphics.drawRect(	 0, 
 											 0, 
-											 scale(Global.SCREEN_WIDTH * 0.8) , 
-											 scale(Global.SCREEN_HEIGHT * 0.8));
+											 Global.Instance().width() * 0.8, 
+											 Global.Instance().height()  * 0.8);
 		
-		screenBackground.x = (Lib.current.stage.stageWidth - scale(Global.SCREEN_WIDTH * 0.8)) / 2;
-		screenBackground.y = (Lib.current.stage.stageHeight - scale(Global.SCREEN_HEIGHT * 0.8)) / 2;
+		screenBackground.x = (Lib.current.stage.stageWidth - (Global.Instance().width() * 0.8)) / 2;
+		screenBackground.y = (Lib.current.stage.stageHeight - (Global.Instance().height() * 0.8)) / 2;
 		
 		addChild(screenBackground);
 		
@@ -64,7 +65,7 @@ class EndGame extends Sprite
 	
 	public function restartButton():Button
 	{
-		var but = new Button();
+		var but = new Button(100, 100);
 	    but.addEventListener(MouseEvent.MOUSE_DOWN, setRestartGame, false, 100);
 		
 		but.x = scale(100);

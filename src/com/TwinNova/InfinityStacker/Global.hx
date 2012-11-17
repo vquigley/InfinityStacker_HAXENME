@@ -7,33 +7,43 @@ import nme.Lib;
 
 class Global 
 {
-	private static var self:Global = null;
-	
+	public static var SCREEN_WIDTH:Float = 480;
+	public static var SCREEN_HEIGHT:Float = 640;	
+		
 	public static function Instance():Global
 	{
-		if (self == null)
+		if (_self == null)
 		{
-			self = new Global();
+			_self = new Global();
 		}
 		
-		return self;
+		return _self;
 	}
 	
 	public function new() 
 	{
-		ratio = (Lib.current.stage.stageWidth / SCREEN_WIDTH);
-		trace(Lib.current.stage.stageWidth);
-		trace(Lib.current.stage.stageHeight);
-		trace(ratio);
+		_ratio = (Lib.current.stage.stageWidth / SCREEN_WIDTH);
+		_width = scale(SCREEN_WIDTH);
+		_height = scale(SCREEN_HEIGHT);
 	}
 	
-	public static var SCREEN_WIDTH:Float = 480;
-	public static var SCREEN_HEIGHT:Float= 640;	
-	public var ratio:Float ;
-	
+	private var _width:Float;
+	private var _height:Float;
+	private var _ratio:Float ;
+	private static var _self:Global = null;
 	
 	public function scale(length:Float):Float
 	{
-		return ratio * length;
+		return _ratio * length;
+	}
+	
+	public function width():Float
+	{
+		return _width;
+	}
+	
+	public function height():Float
+	{
+		return _height;
 	}
 }

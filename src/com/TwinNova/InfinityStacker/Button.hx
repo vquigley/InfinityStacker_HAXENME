@@ -8,35 +8,31 @@ import flash.display.SimpleButton;
  */
 
 class ButtonDisplayState extends Shape {
-    private var bgColor:Int;
-    private var size:Int;
+    private var w:Float;
+    private var h:Float;
 
-    public function new(bgColor:Int, size:Int) {
+    public function new(w:Float, h:Float) {
         super();
-        this.bgColor = bgColor;
-        this.size    = size;
+        this.w    = Global.Instance().scale(w);
+		this.h    = Global.Instance().scale(h);
         draw();
     }
 
     private function draw():Void {
-        graphics.beginFill(bgColor);
-        graphics.drawRect(0, 0, size, size);
+        graphics.beginFill(0xffffff, 0.01);
+        graphics.drawRect(0, 0, w, h);
         graphics.endFill();
     }
 }
 
 class Button extends SimpleButton {
-    private static var upColor:Int   = 0xFFCC00;
-    private static var overColor:Int = 0xCCFF00;
-    private static var downColor:Int = 0x00CCFF;
-    private static var size:Int      = 80;
 
-    public function new() {
+    public function new(w:Float, h:Float) {
         super();
-        downState      = new ButtonDisplayState(downColor, size);
-        overState      = new ButtonDisplayState(overColor, size);
-        upState        = new ButtonDisplayState(upColor, size);
-        hitTestState   = new ButtonDisplayState(upColor, size);
+        downState      = new ButtonDisplayState(w, h);
+        overState      = new ButtonDisplayState(w, h);
+        upState        = new ButtonDisplayState(w, h);
+        hitTestState   = new ButtonDisplayState(w, h);
         
         useHandCursor  = true;
     }

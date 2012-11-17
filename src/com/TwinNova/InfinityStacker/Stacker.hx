@@ -30,7 +30,7 @@ class Stacker extends Sprite
 	static var SQUARE_WIDTH:Int = 50;
 	static var NUM_ROWS:Int = 13;
 	static var NUM_COLUMNS:Int = 8;
-	static var START_MOVE_LENGTH:Float = 0.15;	
+	static var START_MOVE_LENGTH:Float = 0.2;	
 	static var ALPHA_ON_STATE:Int = 200;
 	static var ALPHA_OFF_STATE:Int = 0;
 	static var SPACE_BETWEEN_SQUARES = 5;
@@ -82,20 +82,20 @@ class Stacker extends Sprite
 				
 		stack = new Sprite();
 		stack.x = (Lib.current.stage.stageWidth - stackWidth()) / 2;
-		stack.y = (Lib.current.stage.stageHeight - scale(Global.SCREEN_HEIGHT)) / 2;
+		stack.y = (Lib.current.stage.stageHeight - Global.Instance().height()) / 2;
 		stack.graphics.drawRect(0, 
 								 0, 
 								 stackWidth(), 
-								 scale(Global.SCREEN_HEIGHT + SQUARE_WIDTH + SPACE_BETWEEN_SQUARES));
+								 Global.Instance().height() + scale(SQUARE_WIDTH + SPACE_BETWEEN_SQUARES));
 		
 		stackMask = new Sprite();
-		stackMask.x = (Lib.current.stage.stageWidth - scale(Global.SCREEN_WIDTH)) / 2;
-		stackMask.y = (Lib.current.stage.stageHeight - scale(Global.SCREEN_HEIGHT)) / 2;
+		stackMask.x = (Lib.current.stage.stageWidth - Global.Instance().width()) / 2;
+		stackMask.y = (Lib.current.stage.stageHeight - Global.Instance().height()) / 2;
 		stackMask.graphics.beginFill(0x677777, 1);
 		stackMask.graphics.drawRect(0, 
-								 0, 
-								 scale(Global.SCREEN_WIDTH) , 
-								 scale(Global.SCREEN_HEIGHT));
+									 0, 
+									 Global.Instance().width(), 
+									 Global.Instance().height());
 
 		fillGrid();	
 		
@@ -320,11 +320,12 @@ class Stacker extends Sprite
 	}
 	
 	//  This could be done better, why not create the on and off state from the start.
+	//  Also look at bitmap caching, we should only have two objects being displayed multiple times.
 	private function addSquare(rowNumber:Int, columnNumber:Int, isOn:Bool = false)
 	{
 		var xPos:Float = scale(columnNumber * SQUARE_WIDTH + (columnNumber * SPACE_BETWEEN_SQUARES));
-		var yPos:Float = scale(Global.SCREEN_HEIGHT - ((rowNumber) * SQUARE_WIDTH + ((rowNumber) * SPACE_BETWEEN_SQUARES)) - SQUARE_WIDTH);
-		
+		var yPos:Float = scale(Global.SCREEN_HEIGHT - ((rowNumber) * SQUARE_WIDTH + ((rowNumber) * SPACE_BETWEEN_SQUARES)) - SQUARE_WIDTH - SPACE_BETWEEN_SQUARES);		
+			
 		var square:Sprite = new Sprite();
 		square.x = xPos;
 		square.y = yPos;
