@@ -51,10 +51,10 @@ class EndGame extends Sprite
 		
 		addChild(img);
 		
-		format.size = 128;
+		format.size = scale(160);
 		format.color = 0xFFFFFF;
 		format.align = TextFormatAlign.CENTER;
-		var scoreText:TextField = textField(Std.string(score), 0, 210, 480, 150);
+		var scoreText:TextField = textField(Std.string(score), 0, 230, 480, 150);
 		addChild(scoreText);
 		
 		addChild(mainMenuButton());
