@@ -104,6 +104,10 @@ class GameState extends Sprite
 	private function endGameFrame(event:Event):Void {
 		if (endGameScreen.doRestartGame() != false)
 		{
+			startGame();
+		}
+		else if (endGameScreen.doMainMenu() != false)
+		{
 			showStartScreen();
 		}
 		else if (endGameScreen.resumeGame() != false)

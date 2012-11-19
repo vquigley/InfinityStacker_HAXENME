@@ -6,6 +6,10 @@ import nme.Assets;
 import nme.text.NMEFont;
 import nme.text.TextField;
 import flash.events.MouseEvent;
+import nme.display.Bitmap;
+import nme.Assets;
+import nme.text.TextFormatAlign;
+
 /**
  * ...
  * @author Vincent Quigley
@@ -17,12 +21,17 @@ class EndGame extends Sprite
 	var format:TextFormat;
 	var score:Int;
 	var restartGame:Bool = false;
-	
+	var mainMenu:Bool = false;
+		
 	public function new(ascore:Int) 
 	{
 		super();
 		score = ascore;
-		var font = Assets.getFont ("font/Galliard Bold.ttf");
+		
+		x = (Lib.current.stage.stageWidth - Global.Instance().width()) / 2;
+		y = (Lib.current.stage.stageHeight - Global.Instance().height()) / 2;
+		
+		var font = Assets.getFont ("font/Kabel Demi BT.ttf");
 		format = new TextFormat (font.fontName, 30, 0xFFFF00);
 		loadScreen();
 	}
@@ -34,50 +43,55 @@ class EndGame extends Sprite
 	
 	public function loadScreen()
 	{
-		screenBackground = new Sprite();
-		screenBackground.graphics.lineStyle(1, 0xff0000, 1);
-		screenBackground.graphics.beginFill(0x677777, 1);
-		screenBackground.graphics.drawRect(	 0, 
-											 0, 
-											 Global.Instance().width() * 0.8, 
-											 Global.Instance().height()  * 0.8);
+		var img = new Bitmap (Assets.getBitmapData ("img/endScreen.png"));
+		img.width = Global.Instance().scale(img.width);
+		img.height = Global.Instance().scale(img.height);
+		img.x = 0;
+		img.y = 0;
 		
-		screenBackground.x = (Lib.current.stage.stageWidth - (Global.Instance().width() * 0.8)) / 2;
-		screenBackground.y = (Lib.current.stage.stageHeight - (Global.Instance().height() * 0.8)) / 2;
+		addChild(img);
 		
-		addChild(screenBackground);
-		
-		format.size = 22;
-		format.color = 0xFFFF00;
-		screenBackground.addChild(textField("GAME OVER", 50, 50, 300, 100));
-		
-		format.size = 22;
-		format.color = 0x0000FF;
-		screenBackground.addChild(textField("You got to level", 50, 150, 300, 100));
-		
-		format.size = 32;
+		format.size = 128;
 		format.color = 0xFFFFFF;
-		var scoreText:TextField = textField(Std.string(score), 50, 250, 300, 100);
-		screenBackground.addChild(scoreText);
+		format.align = TextFormatAlign.CENTER;
+		var scoreText:TextField = textField(Std.string(score), 0, 210, 480, 150);
+		addChild(scoreText);
 		
-		screenBackground.addChild(restartButton());
+		addChild(mainMenuButton());
+		addChild(restartButton());
 	}
 	
-	public function restartButton():Button
+	public function mainMenuButton():Button
 	{
-		var but = new Button(100, 100);
-	    but.addEventListener(MouseEvent.MOUSE_DOWN, setRestartGame, false, 100);
+		var but = new Button(164, 95);
+	    but.addEventListener(MouseEvent.MOUSE_DOWN, setMainMenu, false, 100);
 		
-		but.x = scale(100);
-		but.y = scale(350);
-		
+		but.x = scale(65);
+		but.y = scale(438);		
 
 		return but;
 	}
 	
+	public function restartButton():Button
+	{
+		var but = new Button(164, 95);
+	    but.addEventListener(MouseEvent.MOUSE_DOWN, setRestartGame, false, 100);
+		
+		but.x = scale(242);
+		but.y = scale(438);		
+
+		return but;
+	}
+	
+	
 	function setRestartGame(e:MouseEvent):Void
 	{
 		restartGame = true;
+	}
+	
+	function setMainMenu(e:MouseEvent):Void
+	{
+		mainMenu = true;
 	}
 	
 	public function textField(text:String, x, y, w, h)
@@ -99,6 +113,11 @@ class EndGame extends Sprite
 	public function doRestartGame():Bool
 	{
 		return restartGame;
+	}
+	
+	public function doMainMenu():Bool
+	{
+		return mainMenu;
 	}
 	
 	public function resumeGame():Bool

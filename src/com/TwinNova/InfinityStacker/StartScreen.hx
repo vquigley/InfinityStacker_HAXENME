@@ -5,7 +5,6 @@ import flash.events.MouseEvent;
 import nme.Lib;
 import nme.display.Bitmap;
 import nme.Assets;
-import flash.display.SimpleButton;
 
 /**
  * ...
