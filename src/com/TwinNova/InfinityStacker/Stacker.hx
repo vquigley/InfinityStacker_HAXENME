@@ -15,6 +15,7 @@ import flash.display.StageScaleMode;
 import nme.geom.ColorTransform;
 import flash.display.BlendMode;
 import nme.events.MouseEvent;
+import nme.events.EventPhase;
 
 /**
  * ...
@@ -27,10 +28,12 @@ class Stacker extends Sprite
 	static var SQUARE_WIDTH:Int = 50;
 	static var NUM_ROWS:Int = 13;
 	static var NUM_COLUMNS:Int = 8;
-	static var START_MOVE_LENGTH:Float = 0.2;	
+	static var START_MOVE_LENGTH:Float = 1;	
 	static var ALPHA_ON_STATE:Int = 200;
 	static var ALPHA_OFF_STATE:Int = 0;
 	static var SPACE_BETWEEN_SQUARES = 5;
+	static var MAX_NUM_OF_BLOCKS = 4;	
+	static var NO_NEW_BLOCKS:Int = 0;
 	
 	var squareMatrix:Array<Array<Sprite>>;	
 	var sweepBlocks:IGenericActuator;
@@ -45,12 +48,8 @@ class Stacker extends Sprite
 	var endGame:Bool = false;
 	var gameMenu:GameMenu;
 	var quitGame:Bool = false;
-	
-	private function stopEvent(e:Dynamic)
-	{
-		e.stopPropagation();
-		e.stopImmediatePropagation();
-	}
+	var stopEvent:Bool = false;
+	var newBlockPosition:Int;
 	
 	public function new() 
 	{
@@ -81,6 +80,7 @@ class Stacker extends Sprite
 		currentColumns = 0x3c;
 		previousColumns = 0;
 		GoRight = false;
+		newBlockPosition = NO_NEW_BLOCKS;
 	}
 	
 	private function construct ():Void {
@@ -139,7 +139,45 @@ class Stacker extends Sprite
 	
 	public function increaseBlocks()
 	{
+		if ((getNumberOfOnBlocks() < MAX_NUM_OF_BLOCKS) &&
+			(newBlockPosition == NO_NEW_BLOCKS))
+		{
+			newBlockPosition = currentColumns;
+			trace(newBlockPosition);
+			
+			if (isOn(0, currentColumns) != false)
+			{
+				//  Blocks are at the right hand side of the tower.
+				newBlockPosition >>= 1;
+			}
+			else
+			{
+				trace("pulling right");
+				newBlockPosition <<= 1;
+			}
+			
+			trace(newBlockPosition);
+			newBlockPosition |= currentColumns;
+			trace(newBlockPosition);
+			newBlockPosition ^= currentColumns;
+			trace(newBlockPosition);
+			currentColumns |= newBlockPosition;
+		}
+	}
+	
+	public function getNumberOfOnBlocks():Int
+	{
+		var count = 0;
 		
+		for (shift in 0...(NUM_COLUMNS - 1))
+		{
+			if (((currentColumns >> shift) & 1) != 0)
+			{
+				++count;
+			}
+		}
+		
+		return count;
 	}
 	
 	public function quit()
@@ -159,12 +197,17 @@ class Stacker extends Sprite
 	
 	private function blocks_onClick(e:Dynamic):Void
 	{
-		trace("blocks_onClick");
-		beginSetBlocks();
-		CurrentMoveLength /= 1.05;
-		
-		checkBlocks();
-		stopEvent(e);
+		if (stopEvent == false)
+		{
+			beginSetBlocks();
+			CurrentMoveLength /= 1.05;
+			
+			checkBlocks();
+		}
+		else
+		{
+			stopEvent = false;
+		}
 	}
 	
 	function beginSetBlocks()
@@ -180,24 +223,56 @@ class Stacker extends Sprite
 		moveBlocks();
 	}
 	
+	public function doStopEvent()
+	{
+		stopEvent = true;
+	}
+	
 	private function checkBlocks():Void
 	{	
 		var waitForAnimationToComplete:Bool = false;
 		
 		if (currentRow != 1)
 		{	
+			trace(newBlockPosition);
 			var temp:Int = (currentColumns ^ previousColumns) & currentColumns;
 			for (column in 0...NUM_COLUMNS)
 			{
+				//  Block is lost if it is on the temp list.
+				//  It could be saved if it is on the new block position and the block either side 
+				//  so it is not on the temp list.
+				//  It could also be saved if the block beside it is the new block and it is not on 
+				//  the temp list.
 				if (isOn(column, temp))
 				{
-					lostSquare(column);
-					waitForAnimationToComplete = true;
+					var isLost:Bool = true;
+					
+					//  Is new block and connector block is not on the temp list.
+					if ((((1 << column) & newBlockPosition) != 0) &&
+						(isOn(newBlockPosition >> 1, temp) == false) &&
+						(isOn(newBlockPosition << 1, temp) == false))
+					{
+						isLost = false;
+					}
+					else if (((newBlockPosition & currentColumns) != 0) &&
+							 ((newBlockPosition == (1 << column + 1)) ||
+							  (newBlockPosition == (1 << column - 1))))
+					{
+						isLost = false;
+					}
+					 
+					if (isLost)
+					{
+						lostSquare(column);
+						waitForAnimationToComplete = true;
+					}
 				}
 			}
 			
-			currentColumns &= previousColumns;
+			currentColumns &= (previousColumns | newBlockPosition);
 		}
+		
+		newBlockPosition = NO_NEW_BLOCKS;
 		
 		previousColumns = currentColumns;
 		
@@ -306,10 +381,20 @@ class Stacker extends Sprite
 		if (GoRight == false)
 		{
 			currentColumns <<= 1;
+			
+			if (newBlockPosition != NO_NEW_BLOCKS)
+			{
+				newBlockPosition <<= 1;
+			}
 		}
 		else
 		{
 			currentColumns >>= 1;
+			
+			if (newBlockPosition != NO_NEW_BLOCKS)
+			{
+				newBlockPosition >>= 1;
+			}
 		}
 		
 		for (column in 0...NUM_COLUMNS)

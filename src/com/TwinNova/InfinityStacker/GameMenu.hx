@@ -68,7 +68,6 @@ class GameMenu extends Sprite
 	
 	private function stopEvent(e:Dynamic)
 	{
-		e.stopPropagation();
-		e.stopImmediatePropagation();
+		stacker.doStopEvent();
 	}
 }
