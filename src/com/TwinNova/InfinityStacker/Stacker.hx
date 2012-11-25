@@ -4,20 +4,17 @@ import com.eclecticdesignstudio.motion.Actuate;
 import com.eclecticdesignstudio.motion.actuators.GenericActuator;
 import com.eclecticdesignstudio.motion.easing.Elastic;
 import com.eclecticdesignstudio.motion.easing.Bounce;
+import com.twinnova.infinitystacker.GameMenu;
 import nme.geom.Matrix;
 
-import nme.events.Event;
 import nme.Lib;
 import flash.display.Sprite;
 import flash.display.StageAlign;
 import flash.display.StageQuality;
 import flash.display.StageScaleMode;
-import flash.events.Event;
-import flash.Lib;
 import nme.geom.ColorTransform;
 import flash.display.BlendMode;
 import nme.events.MouseEvent;
-import nme.events.TouchEvent;
 
 /**
  * ...
@@ -46,6 +43,14 @@ class Stacker extends Sprite
 	var previousColumns:Int;
 	var GoRight:Bool;
 	var endGame:Bool = false;
+	var gameMenu:GameMenu;
+	var quitGame:Bool = false;
+	
+	private function stopEvent(e:Dynamic)
+	{
+		e.stopPropagation();
+		e.stopImmediatePropagation();
+	}
 	
 	public function new() 
 	{
@@ -79,7 +84,6 @@ class Stacker extends Sprite
 	}
 	
 	private function construct ():Void {
-				
 		stack = new Sprite();
 		stack.x = (Lib.current.stage.stageWidth - stackWidth()) / 2;
 		stack.y = (Lib.current.stage.stageHeight - Global.Instance().height()) / 2;
@@ -97,11 +101,17 @@ class Stacker extends Sprite
 									 Global.Instance().width(), 
 									 Global.Instance().height());
 
-		fillGrid();	
-		
 		stack.mask = stackMask;
+		
+		gameMenu = new GameMenu(this);
+		gameMenu.x = 0;
+		gameMenu.y = stackMask.y + stackMask.height - gameMenu.height;
+		
+		fillGrid();			
+		
 		addChild(stack);
-		addChild(stackMask); 
+		addChild(stackMask); 		
+		addChild(gameMenu);
 	}
 	
 	public function doEndGame()
@@ -121,6 +131,26 @@ class Stacker extends Sprite
 	{
 		return currentRow;
 	}
+	
+	public function resetTimer()
+	{
+		CurrentMoveLength = START_MOVE_LENGTH;
+	}
+	
+	public function increaseBlocks()
+	{
+		
+	}
+	
+	public function quit()
+	{
+		quitGame = true;
+	}
+	
+	public function doQuitGame():Bool
+	{
+		return quitGame;
+	}
 		
 	private static function stackWidth()
 	{
@@ -129,10 +159,12 @@ class Stacker extends Sprite
 	
 	private function blocks_onClick(e:Dynamic):Void
 	{
+		trace("blocks_onClick");
 		beginSetBlocks();
 		CurrentMoveLength /= 1.05;
 		
 		checkBlocks();
+		stopEvent(e);
 	}
 	
 	function beginSetBlocks()
@@ -324,7 +356,7 @@ class Stacker extends Sprite
 	private function addSquare(rowNumber:Int, columnNumber:Int, isOn:Bool = false)
 	{
 		var xPos:Float = scale(columnNumber * SQUARE_WIDTH + (columnNumber * SPACE_BETWEEN_SQUARES));
-		var yPos:Float = scale(Global.SCREEN_HEIGHT - ((rowNumber) * SQUARE_WIDTH + ((rowNumber) * SPACE_BETWEEN_SQUARES)) - SQUARE_WIDTH - SPACE_BETWEEN_SQUARES);		
+		var yPos:Float = scale(Global.SCREEN_HEIGHT - ((rowNumber) * SQUARE_WIDTH + ((rowNumber) * SPACE_BETWEEN_SQUARES)) - SQUARE_WIDTH - SPACE_BETWEEN_SQUARES)  - gameMenu.height;
 			
 		var square:Sprite = new Sprite();
 		square.x = xPos;

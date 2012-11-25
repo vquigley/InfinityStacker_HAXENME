@@ -2,6 +2,10 @@ package com.twinnova.infinitystacker;
 import flash.display.DisplayObject;
 import flash.display.Shape;
 import flash.display.SimpleButton;
+import flash.display.Sprite;
+
+import nme.display.Bitmap;
+
 /**
  * ...
  * @author Vincent Quigley
@@ -27,12 +31,23 @@ class ButtonDisplayState extends Shape {
 
 class Button extends SimpleButton {
 
-    public function new(w:Float, h:Float) {
+    public function new(img:Bitmap, ?w:Float, ?h:Float) {
         super();
-        downState      = new ButtonDisplayState(w, h);
-        overState      = new ButtonDisplayState(w, h);
-        upState        = new ButtonDisplayState(w, h);
-        hitTestState   = new ButtonDisplayState(w, h);
+		if (img == null)
+		{
+			// Going to phase this out, I don't like it. A button should always have a bitmap.
+			downState      = new ButtonDisplayState(w, h);
+			overState      = new ButtonDisplayState(w, h);
+			upState        = new ButtonDisplayState(w, h);
+			hitTestState   = new ButtonDisplayState(w, h);
+		}
+		else
+		{
+			downState      = img;
+			overState      = img;
+			upState        = img;
+			hitTestState   = img;
+		}
         
         useHandCursor  = true;
     }

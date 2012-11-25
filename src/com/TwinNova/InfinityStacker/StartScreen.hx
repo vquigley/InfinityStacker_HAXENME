@@ -30,7 +30,7 @@ class StartScreen extends Sprite
 		startImg.y = 0;
 		addChild (startImg);
 		
-		var startButton = new Button(155, 80);
+		var startButton = new Button(null, 155, 80);
 		
 		startButton.x = Global.Instance().scale(20);
 		startButton.y = Global.Instance().scale(155);

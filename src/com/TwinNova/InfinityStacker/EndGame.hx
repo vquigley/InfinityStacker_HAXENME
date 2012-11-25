@@ -54,7 +54,7 @@ class EndGame extends Sprite
 		format.size = scale(160);
 		format.color = 0xFFFFFF;
 		format.align = TextFormatAlign.CENTER;
-		var scoreText:TextField = textField(Std.string(score), 0, 230, 480, 150);
+		var scoreText:TextField = textField(Std.string(score), 0, 230, 480, 200);
 		addChild(scoreText);
 		
 		addChild(mainMenuButton());
@@ -63,7 +63,7 @@ class EndGame extends Sprite
 	
 	public function mainMenuButton():Button
 	{
-		var but = new Button(164, 95);
+		var but = new Button(null, 164, 95);
 	    but.addEventListener(MouseEvent.MOUSE_DOWN, setMainMenu, false, 100);
 		
 		but.x = scale(65);
@@ -74,7 +74,7 @@ class EndGame extends Sprite
 	
 	public function restartButton():Button
 	{
-		var but = new Button(164, 95);
+		var but = new Button(null, 164, 95);
 	    but.addEventListener(MouseEvent.MOUSE_DOWN, setRestartGame, false, 100);
 		
 		but.x = scale(242);

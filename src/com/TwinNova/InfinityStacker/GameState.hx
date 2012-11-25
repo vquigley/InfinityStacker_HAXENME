@@ -99,6 +99,10 @@ class GameState extends Sprite
 		{
 			showEndScreen();
 		}
+		else if (stacker.doQuitGame() != false)
+		{
+			showStartScreen();			
+		}
 	}
 	
 	private function endGameFrame(event:Event):Void {

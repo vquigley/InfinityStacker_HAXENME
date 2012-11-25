@@ -1,5 +1,8 @@
 package com.twinnova.infinitystacker;
 import nme.Lib;
+
+import nme.display.Bitmap;
+import nme.Assets;
 /**
  * ...
  * @author Vincent Quigley
@@ -31,6 +34,15 @@ class Global
 	private var _height:Float;
 	private var _ratio:Float ;
 	private static var _self:Global = null;
+	
+	public function getBitmap(location:String):Bitmap
+	{
+		var img = new Bitmap (Assets.getBitmapData (location));
+		img.width = Global.Instance().scale(img.width);
+		img.height = Global.Instance().scale(img.height);
+		
+		return img;
+	}
 	
 	public function scale(length:Float):Float
 	{
