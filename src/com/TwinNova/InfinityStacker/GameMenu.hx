@@ -55,7 +55,6 @@ class GameMenu extends Sprite
 	
 	private function resetStackerTime(e:Dynamic)
 	{
-		trace("resetStackerTime");
 		stacker.resetTimer();
 		stopEvent(e);
 	}

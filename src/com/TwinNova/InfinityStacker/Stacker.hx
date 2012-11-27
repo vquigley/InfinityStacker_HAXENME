@@ -28,7 +28,7 @@ class Stacker extends Sprite
 	static var SQUARE_WIDTH:Int = 50;
 	static var NUM_ROWS:Int = 13;
 	static var NUM_COLUMNS:Int = 8;
-	static var START_MOVE_LENGTH:Float = 1;	
+	static var START_MOVE_LENGTH:Float = 0.2;	
 	static var ALPHA_ON_STATE:Int = 200;
 	static var ALPHA_OFF_STATE:Int = 0;
 	static var SPACE_BETWEEN_SQUARES = 5;
@@ -143,24 +143,19 @@ class Stacker extends Sprite
 			(newBlockPosition == NO_NEW_BLOCKS))
 		{
 			newBlockPosition = currentColumns;
-			trace(newBlockPosition);
 			
-			if (isOn(0, currentColumns) != false)
+			if (isOn(0, currentColumns) == false)
 			{
 				//  Blocks are at the right hand side of the tower.
 				newBlockPosition >>= 1;
 			}
 			else
 			{
-				trace("pulling right");
 				newBlockPosition <<= 1;
 			}
 			
-			trace(newBlockPosition);
 			newBlockPosition |= currentColumns;
-			trace(newBlockPosition);
 			newBlockPosition ^= currentColumns;
-			trace(newBlockPosition);
 			currentColumns |= newBlockPosition;
 		}
 	}
@@ -230,53 +225,61 @@ class Stacker extends Sprite
 	
 	private function checkBlocks():Void
 	{	
-		var waitForAnimationToComplete:Bool = false;
+		var nowOff:Int = 0;
 		
 		if (currentRow != 1)
 		{	
-			trace(newBlockPosition);
-			var temp:Int = (currentColumns ^ previousColumns) & currentColumns;
+			var stillOn:Int = ((currentColumns | newBlockPosition) & previousColumns);
+			nowOff = (currentColumns ^ stillOn);
+			
 			for (column in 0...NUM_COLUMNS)
 			{
-				//  Block is lost if it is on the temp list.
-				//  It could be saved if it is on the new block position and the block either side 
-				//  so it is not on the temp list.
-				//  It could also be saved if the block beside it is the new block and it is not on 
-				//  the temp list.
-				if (isOn(column, temp))
+				//  Is this a column of interest, i.e. was it on when the move was made?
+				if (isOn(column, currentColumns) == false)
 				{
-					var isLost:Bool = true;
-					
-					//  Is new block and connector block is not on the temp list.
-					if ((((1 << column) & newBlockPosition) != 0) &&
-						(isOn(newBlockPosition >> 1, temp) == false) &&
-						(isOn(newBlockPosition << 1, temp) == false))
+					//  Do not care for a column was not on.
+					continue;
+				}
+				
+				//  Is the column still on?
+				if (isOn(column, stillOn))
+				{
+					//  Do not care for a column that is still on.
+					continue;
+				}
+				
+				//  Column will be lost unless a new block can save it.
+				
+				// Is this a new block?
+				if (((1 << column) & newBlockPosition) != 0)
+				{
+					//  Is it beside a block that is still on?
+					if (isOn(column + 1, stillOn) || isOn(column - 1, stillOn))
 					{
-						isLost = false;
-					}
-					else if (((newBlockPosition & currentColumns) != 0) &&
-							 ((newBlockPosition == (1 << column + 1)) ||
-							  (newBlockPosition == (1 << column - 1))))
+						continue;
+					}					
+				}
+				
+				//  Is this beside a new block that is still on?
+				if (isOn(column + 1, newBlockPosition) || isOn(column - 1, newBlockPosition))
+				{
+					//  We are beside a new block, is it still on?
+					if ((newBlockPosition & previousColumns) != 0)
 					{
-						isLost = false;
-					}
-					 
-					if (isLost)
-					{
-						lostSquare(column);
-						waitForAnimationToComplete = true;
+						continue;
 					}
 				}
+				
+				lostSquare(column);
+				currentColumns ^= (1 << column);
 			}
-			
-			currentColumns &= (previousColumns | newBlockPosition);
 		}
 		
 		newBlockPosition = NO_NEW_BLOCKS;
 		
 		previousColumns = currentColumns;
 		
-		if (waitForAnimationToComplete != false)
+		if (nowOff != 0)
 		{
 			if (currentColumns != 0)
 			{
