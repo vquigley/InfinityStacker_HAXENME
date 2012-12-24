@@ -14,6 +14,8 @@ import nme.Assets;
 class StartScreen extends Sprite
 {
 	var startGame:Bool = false;
+	var muteButton:Button = null;
+	var unMuteButton:Button = null;
 	
 	public function new() 
 	{
@@ -37,6 +39,47 @@ class StartScreen extends Sprite
 		startButton.addEventListener(MouseEvent.MOUSE_DOWN, setStartGame, false, 100);
 		
 		addChild(startButton);
+		
+		
+		muteButton = new Button(Global.Instance().getBitmap("img/soundOn.png"));
+		
+		muteButton.x = Global.Instance().scale(88);
+		muteButton.y = Global.Instance().scale(292);
+		addChild(muteButton);
+		
+		unMuteButton = new Button(Global.Instance().getBitmap("img/soundOff.png"));
+		
+		unMuteButton.x = muteButton.x;
+		unMuteButton.y = muteButton.y;
+		
+		addChild(unMuteButton);
+		
+		if (GameState.playSound)
+		{
+			unmuteGame(null);
+		}
+		else
+		{
+			muteGame(null);
+		}
+	}
+	
+	function muteGame(e:MouseEvent)
+	{
+		muteButton.visible = false;
+		unMuteButton.visible = true;
+		GameState.playSound = false;
+		muteButton.removeEventListener(MouseEvent.MOUSE_DOWN, muteGame);
+		unMuteButton.addEventListener(MouseEvent.MOUSE_DOWN, unmuteGame, false, 100);
+	}
+	
+	function unmuteGame(e:MouseEvent)
+	{
+		unMuteButton.visible = false;
+		muteButton.visible = true;
+		GameState.playSound = true;
+		unMuteButton.removeEventListener(MouseEvent.MOUSE_DOWN, unmuteGame);
+		muteButton.addEventListener(MouseEvent.MOUSE_DOWN, muteGame, false, 100);
 	}
 	
 	function setStartGame(e:MouseEvent):Void

@@ -5,7 +5,9 @@ import com.eclecticdesignstudio.motion.actuators.GenericActuator;
 import com.eclecticdesignstudio.motion.easing.Elastic;
 import com.eclecticdesignstudio.motion.easing.Bounce;
 import com.twinnova.infinitystacker.GameMenu;
+import flash.display.DisplayObject;
 import nme.geom.Matrix;
+import nme.media.Sound;
 
 import nme.Lib;
 import flash.display.Sprite;
@@ -16,11 +18,20 @@ import nme.geom.ColorTransform;
 import flash.display.BlendMode;
 import nme.events.MouseEvent;
 import nme.events.EventPhase;
+import nme.display.Bitmap;
 
 /**
  * ...
  * @author Vincent Quigley
  */
+
+class Row extends Sprite
+{	
+	public function new() 
+	{
+		super ();
+	}
+}
 
 class Stacker extends Sprite 
 {
@@ -35,7 +46,8 @@ class Stacker extends Sprite
 	static var MAX_NUM_OF_BLOCKS = 4;	
 	static var NO_NEW_BLOCKS:Int = 0;
 	
-	var squareMatrix:Array<Array<Sprite>>;	
+	var squareOnMatrix:Array<Row>;	
+	var squareOffMatrix:Array<Row>;	
 	var sweepBlocks:IGenericActuator;
 	var stackMask:Sprite;
 	var stack:Sprite;
@@ -50,6 +62,11 @@ class Stacker extends Sprite
 	var quitGame:Bool = false;
 	var stopEvent:Bool = false;
 	var newBlockPosition:Int;
+	var currentBracket:Sprite;
+	var isBracketLeft:Bool;
+	
+	static var pipSound : Sound = null;
+    static var lostBlockSound : Sound = null;
 	
 	public function new() 
 	{
@@ -73,7 +90,8 @@ class Stacker extends Sprite
 	private function initialize ():Void {		
 		CurrentMoveLength = START_MOVE_LENGTH;
 		
-		squareMatrix = new Array<Array<Sprite>>();
+		squareOffMatrix = new Array<Row>();
+		squareOnMatrix = new Array<Row>();
 				
 		firstShift = false;	
 		currentRow = 1;
@@ -81,6 +99,8 @@ class Stacker extends Sprite
 		previousColumns = 0;
 		GoRight = false;
 		newBlockPosition = NO_NEW_BLOCKS;
+		pipSound = ApplicationMain.getAsset("sound/pip.wav");
+		lostBlockSound = ApplicationMain.getAsset("sound/124996__phmiller42__aww.wav");
 	}
 	
 	private function construct ():Void {
@@ -148,16 +168,31 @@ class Stacker extends Sprite
 			{
 				//  Blocks are at the right hand side of the tower.
 				newBlockPosition >>= 1;
+				isBracketLeft = false;
 			}
 			else
 			{
 				newBlockPosition <<= 1;
+				isBracketLeft = true;
 			}
 			
 			newBlockPosition |= currentColumns;
 			newBlockPosition ^= currentColumns;
 			currentColumns |= newBlockPosition;
+			
+			currentBracket = createNewBracket();
 		}
+	}
+	
+	private function createNewBracket()
+	{
+		var fixture:Bitmap = Global.Instance().getBitmap("img/fixture.png");
+		fixture.width = fixture.width * 0.32;
+		fixture.height = fixture.height * 0.32;		
+		
+		var sprite:Sprite = new Sprite();
+		sprite.addChild(fixture);
+		return sprite;
 	}
 	
 	public function getNumberOfOnBlocks():Int
@@ -225,12 +260,11 @@ class Stacker extends Sprite
 	
 	private function checkBlocks():Void
 	{	
-		var nowOff:Int = 0;
+		var nowOff:Bool = false;
 		
 		if (currentRow != 1)
 		{	
 			var stillOn:Int = ((currentColumns | newBlockPosition) & previousColumns);
-			nowOff = (currentColumns ^ stillOn);
 			
 			for (column in 0...NUM_COLUMNS)
 			{
@@ -257,7 +291,10 @@ class Stacker extends Sprite
 					if (isOn(column + 1, stillOn) || isOn(column - 1, stillOn))
 					{
 						continue;
-					}					
+					}	
+					
+					//  We've lost the new square.
+					
 				}
 				
 				//  Is this beside a new block that is still on?
@@ -268,8 +305,11 @@ class Stacker extends Sprite
 					{
 						continue;
 					}
+					
+					flick(currentBracket);
 				}
 				
+				nowOff = true;
 				lostSquare(column);
 				currentColumns ^= (1 << column);
 			}
@@ -279,8 +319,13 @@ class Stacker extends Sprite
 		
 		previousColumns = currentColumns;
 		
-		if (nowOff != 0)
+		if (nowOff != false)
 		{
+			if (GameState.playSound)
+			{
+				lostBlockSound.play(0, 0);
+			}
+			
 			if (currentColumns != 0)
 			{
 				Actuate.timer(1.2).onComplete(nextLevel);
@@ -298,15 +343,15 @@ class Stacker extends Sprite
 	
 	function lostSquare(columnNumber)
 	{
-		flick(getActionRow(), columnNumber);
+		flick(squareOnMatrix[getActionRow()].getChildAt(columnNumber));
 	}
 	
-	function flick(row:Int, column:Int, turnOn:Bool = false, iteration:Int = 0):Void
+	function flick(sprite:DisplayObject, turnOn:Bool = false, iteration:Int = 0):Void
 	{
 		if (iteration < 11)
 		{
-			turn(row, column, turnOn);
-			Actuate.timer(0.1).onComplete(flick, [row, column, ((turnOn != false) ? false :true), iteration + 1]);
+			sprite.visible = turnOn;
+			Actuate.timer(0.1).onComplete(flick, [sprite, ((turnOn != false) ? false :true), iteration + 1]);
 		}
 	}
 	
@@ -337,13 +382,16 @@ class Stacker extends Sprite
 	{		
 		addRow();
 				
-		for (row in squareMatrix)
+		for (row in squareOnMatrix)
 		{
-			for (square in row)
-			{
-				Actuate.tween (square, 1, { y: square.y + scale(SQUARE_WIDTH + SPACE_BETWEEN_SQUARES)} )
-							.ease (Elastic.easeIn);		
-			}
+			Actuate.tween (row, 1, { y: row.y + scale(SQUARE_WIDTH + SPACE_BETWEEN_SQUARES)} )
+						.ease (Elastic.easeIn);		
+		}
+		
+		for (row in squareOffMatrix)
+		{
+			Actuate.tween (row, 1, { y: row.y + scale(SQUARE_WIDTH + SPACE_BETWEEN_SQUARES)} )
+						.ease (Elastic.easeIn);		
 		}
 		
 		Actuate.timer(1).onComplete(removeBottomRow);
@@ -352,18 +400,18 @@ class Stacker extends Sprite
 	
 	private function removeBottomRow():Void
 	{
-		var bottomRow:Array<Sprite> = squareMatrix[0];
-
-		for (square in bottomRow)
-		{
-			var local:Sprite = square;
-			removeSquare(square);
-		}
+		removeRow(squareOnMatrix[0]);
+		removeRow(squareOffMatrix[0]);
 		
-		squareMatrix.remove(bottomRow);
-		
+		squareOnMatrix.remove(squareOnMatrix[0]);
+		squareOffMatrix.remove(squareOffMatrix[0]);
+				
 		endSetBlocks();
+	}
 	
+	private function removeRow(row:Row):Void
+	{
+		stack.removeChild(row);
 	}
 	
 	private function removeSquare(square:Sprite)
@@ -375,10 +423,12 @@ class Stacker extends Sprite
 		if (isOn(7, currentColumns) != false)
 		{
 			GoRight = true;
+			playPip();
 		}
 		else if (isOn(0, currentColumns) != false)
 		{
 			GoRight = false;
+			playPip();
 		}
 		
 		if (GoRight == false)
@@ -402,12 +452,36 @@ class Stacker extends Sprite
 		
 		for (column in 0...NUM_COLUMNS)
 		{
-			var isOn:Bool = isOn(column, currentColumns);
+			var _isOn:Bool = isOn(column, currentColumns);
 			
-			turn(getActionRow(), column, isOn);
+			turn(getActionRow(), column, _isOn);
+			
+			// Set the bracket on the new block.
+			var isNewBlock:Bool = isOn(column, newBlockPosition);
+			
+			if (isNewBlock)
+			{
+				currentBracket.x = squareOnMatrix[getActionRow()].getChildAt(column).x - scale(9);
+				
+				if (isBracketLeft != false)
+				{
+					currentBracket.x -= scale(SQUARE_WIDTH + SPACE_BETWEEN_SQUARES);
+				}
+				
+				currentBracket.y = squareOnMatrix[getActionRow()].getChildAt(column).y + scale(3);
+				squareOnMatrix[getActionRow()].addChild(currentBracket);
+			}			
 		}
 		
 		sweepBlocks = Actuate.timer (CurrentMoveLength).onComplete(moveBlocks);
+	}
+	
+	function playPip()
+	{
+		if (GameState.playSound)
+		{
+			pipSound.play(0, 0);
+		}
 	}
 	
 	function isOn(columnNum, columnByte):Bool
@@ -417,8 +491,7 @@ class Stacker extends Sprite
 	
 	private function turn(row, column, isOn)
 	{
-		removeSquare(squareMatrix[row][column]);
-		addSquare(row, column, isOn);
+		squareOnMatrix[row].getChildAt(column).visible = isOn;
 	}
 	
 	private function fillGrid()
@@ -431,17 +504,22 @@ class Stacker extends Sprite
 	
 	private function addRow()
 	{		
-		squareMatrix.push(new Array<Sprite>());
+		squareOnMatrix.push(new Row());
+		squareOffMatrix.push(new Row());
 		
 		for (columnNumber in 0...NUM_COLUMNS)
 		{
-			addSquare(squareMatrix.length - 1, columnNumber);
+			addSquare(squareOffMatrix.length - 1, columnNumber, squareOffMatrix, false);
+			addSquare(squareOnMatrix.length - 1, columnNumber, squareOnMatrix, true).visible = false;
 		}
+		
+		stack.addChild(squareOffMatrix[squareOffMatrix.length - 1]);
+		stack.addChild(squareOnMatrix[squareOnMatrix.length - 1]);
 	}
 	
 	//  This could be done better, why not create the on and off state from the start.
 	//  Also look at bitmap caching, we should only have two objects being displayed multiple times.
-	private function addSquare(rowNumber:Int, columnNumber:Int, isOn:Bool = false)
+	private function addSquare(rowNumber:Int, columnNumber:Int, matrix:Array<Row>, isOn:Bool):Sprite
 	{
 		var xPos:Float = scale(columnNumber * SQUARE_WIDTH + (columnNumber * SPACE_BETWEEN_SQUARES));
 		var yPos:Float = scale(Global.SCREEN_HEIGHT - ((rowNumber) * SQUARE_WIDTH + ((rowNumber) * SPACE_BETWEEN_SQUARES)) - SQUARE_WIDTH - SPACE_BETWEEN_SQUARES)  - gameMenu.height;
@@ -449,23 +527,16 @@ class Stacker extends Sprite
 		var square:Sprite = new Sprite();
 		square.x = xPos;
 		square.y = yPos;
-		square.graphics.lineStyle(1, 0x00ff00, 1);
 		square.graphics.beginFill(0xE0D873, ((isOn == false) ? 0.2 : 0.8));
+		square.graphics.lineStyle(1, 0x00ff00, 1);
 		square.graphics.drawRect(0, 
 								 0, 
 								 scale(SQUARE_WIDTH), 
 								 scale(SQUARE_WIDTH));
 
-		if (squareMatrix[rowNumber].length >= columnNumber)
-		{
-			squareMatrix[rowNumber][columnNumber] = square;
-		}
-		else
-		{
-			squareMatrix[rowNumber].push(square);
-		}
+		matrix[rowNumber].addChild(square);
 		
-		stack.addChild(square);
+		return square;
 	}
 	
 	public static function scale(length:Float):Float

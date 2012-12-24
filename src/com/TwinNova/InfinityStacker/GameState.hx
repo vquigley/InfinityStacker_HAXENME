@@ -18,11 +18,12 @@ class GameState extends Sprite
 	private static var endGameScreen:EndGame;	
 	private static var startScreen:StartScreen;	
 	
+	public static var playSound = true;
+	
 	public function new() 
 	{
 		super();
 		showStartScreen();
-		//startGame();
 	}
 	
 	private function showStartScreen():Void
